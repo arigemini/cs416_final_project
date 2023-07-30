@@ -1,1 +1,1 @@
-# cs416_final_project
+# CS416 - Data Visualization Final Project
