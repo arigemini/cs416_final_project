@@ -7,12 +7,14 @@
     <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
 </head>
 <body>
-    <svg width="460" height="400" id="example1"></svg>
-    <div id="my_dataviz"></div>
+    <div id="annotation_example">
+        <svg width="460" height="400" id="example1"></svg>
+    </div>
 
+    <div id="main_chart"></div>
+    
     <script>
 
-    // Features of the annotation
     const annotations = [
       {
         note: {
@@ -26,7 +28,6 @@
       }
     ]
 
-    // Add annotation to the chart
     const makeAnnotations = d3.annotation()
       .annotations(annotations)
     d3.select("#example1")
@@ -36,58 +37,106 @@
 
     <script>
 
-// set the dimensions and margins of the graph
-var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 460 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
 
-// append the svg object to the body of the page
-var svg = d3.select("#my_dataviz")
-  .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+    var margin = {top: 100, right: 100, bottom: 100, left: 100},
+        width = window.innerWidth * 0.90 - margin.left - margin.right,
+        height = window.innerHeight * 0.90 - margin.top - margin.bottom;
 
-//Read the data
-d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered_comma.csv",
+    var svg = d3.select("#main_chart")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
 
-  // When reading the csv, I must format variables:
-  function(d){
-    return { date : d3.timeParse("%Y-%m-%d")(d.date), value : d.value }
-  },
+    d3.csv("https://raw.githubusercontent.com/arigemini/cs416_final_project/main/SPX_FAANG.csv",
 
-  // Now I can use this dataset:
-  function(data) {
+      function(d){
+        return {
+            date : d3.timeParse("%Y-%m-%d")(d.Date),
+            spx : +d.SPX,
+            meta: +d.META,
+            amzn: +d.AMZN,
+            aapl: +d.AAPL,
+            nflx: +d.NFLX,
+            goog: +d.GOOG,
+        }
+      },
 
-    // Add X axis --> it is a date format
-    var x = d3.scaleTime()
-      .domain(d3.extent(data, function(d) { return d.date; }))
-      .range([ 0, width ]);
-    svg.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+      function(data) {
 
-    // Add Y axis
-    var y = d3.scaleLinear()
-      .domain([0, d3.max(data, function(d) { return +d.value; })])
-      .range([ height, 0 ]);
-    svg.append("g")
-      .call(d3.axisLeft(y));
+        var x = d3.scaleTime()
+          .domain(d3.extent(data, function(d) { return d.date; }))
+          .range([ 0, width ]);
+        svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
 
-    // Add the line
-    svg.append("path")
-      .datum(data)
-      .attr("fill", "none")
-      .attr("stroke", "steelblue")
-      .attr("stroke-width", 1.5)
-      .attr("d", d3.line()
-        .x(function(d) { return x(d.date) })
-        .y(function(d) { return y(d.value) })
-        )
+        var y = d3.scaleLinear()
+          .domain([0, d3.max(data, function(d) { return d.spx; })])
+          .range([ height, 0 ]);
+        svg.append("g")
+          .call(d3.axisLeft(y));
 
-})
+        var y2 = d3.scaleLinear()
+          .domain([0, 800])
+          .range([ height, 0 ]);
+        svg.append("g")
+          .attr("transform", "translate(" + width + ",0)")
+          .call(d3.axisRight(y2));
+
+                svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", width / 2)
+            .attr("y", height + margin.bottom / 2)
+            .text("Date");
+
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("y", -margin.left / 2)
+            .attr("x", (-height + margin.top) / 2)
+            .attr("transform", "rotate(-90)")
+            .text("S&P 500 Index");
+
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("y", width + margin.right / 2)
+            .attr("x", (-height + margin.top) / 2)
+            .attr("transform", "rotate(-90)")
+            .text("(FAANG) Share Price");
+          
+        var color = d3.scaleOrdinal()
+          .domain(["spx", "meta", "amzn", "aapl", "nflx", "goog"])
+          .range(["gray", "blue", "orange", "pink", "red", "green"])
+
+        // Add the line
+        svg.append("path")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", color("spx"))
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+            .x(function(d) { return x(d.date) })
+            .y(function(d) { return y(d.spx) })
+          );
+
+        ["meta", "amzn", "aapl", "nflx", "goog"].forEach((ticker) => {
+            svg.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", color(ticker))
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(d) { return x(d.date); })
+                .y(function(d) { 
+                    console.log(ticker, y2[d.ticker]);
+                    return y2(d[ticker]); })
+            );
+        })
+
+      }
+    )
 
     </script>
 
