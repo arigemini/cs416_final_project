@@ -53,17 +53,54 @@
         width = window.innerWidth * 0.90 - margin.left - margin.right,
         height = window.innerHeight * 0.90 - margin.top - margin.bottom;
 
-    const svg = d3.select("#main_chart")
-      .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
+    function get_date_idx(date, data) {
+        date = from_date_str(date);
+        getDistanceFromDate = (d) =>
+            Math.abs(d.date - date);
+        return d3.scan(
+          data,
+          (a, b) => getDistanceFromDate(a) - getDistanceFromDate(b)
+        );
+    };
 
+    function from_date_str(date_str) {
+        return d3.timeParse("%Y-%m-%d")(date_str);
+    }
+        
+    function drawChartScenes(data) {
+        timeout_ms = 1500;
+        
+        drawLineChart(data.slice(0, get_date_idx('2020-02-18', data) + 1));
+        
+        setTimeout(function() {
+            d3.select("#main_chart").node().innerHTML = "";
+            drawLineChart(data.slice(0, get_date_idx('2020-03-23', data) + 1));
+            
+            setTimeout(function() {
+                d3.select("#main_chart").node().innerHTML = "";
+                drawLineChart(data.slice(0, get_date_idx('2022-01-04', data) + 1));
+            
+                setTimeout(function() {
+                    d3.select("#main_chart").node().innerHTML = "";
+                    drawLineChart(data);
+                }, timeout_ms)
+                
+            }, timeout_ms);
+            
+        }, timeout_ms);
+    }
+        
     function drawLineChart(data) {
+        const svg = d3.select("#main_chart")
+          .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform",
+                  "translate(" + margin.left + "," + margin.top + ")");
+        
         const xScale = d3.scaleTime()
-          .domain(d3.extent(data, function(d) { return d.date; }))
+          .domain([d3.timeParse("%Y-%m-%d")('2015-01-01'), d3.timeParse("%Y-%m-%d")('2023-07-01')])  
           .range([ 0, width ]);
         svg.append("g")
           .attr("transform", "translate(0," + height + ")")
@@ -102,7 +139,7 @@
             .attr("transform", "rotate(-90)")
             .text("FAANG Share Price");
           
-        tickers = ["spx", "meta", "amzn", "aapl", "nflx", "goog"];
+        tickers = ["s&p 500", "meta", "amzn", "aapl", "nflx", "goog"];
           
         var color = d3.scaleOrdinal()
           .domain(tickers)
@@ -117,7 +154,7 @@
 	      .attr("class","legend");
 	
         var rects = legend.append('rect')
-        	.attr("width",legendItemWidth / 2)
+        	.attr("width",legendItemWidth * 0.75)
         	.attr("height",2)
         	.attr("fill", function(d) { return color(d); });
         	
@@ -176,38 +213,41 @@
             .attr("stroke-width", "1px")
             .attr("height", height);
 
-        const annotations = [
-          {
-            note: {
-              label: "Covid",
-              title: "2020-03-23",
-              align: "middle",
-                
-            },
-            connector: {
-                end: "arrow",
-            },
-            x: xScale(d3.timeParse("%Y-%m-%d")('2020-03-23')),
-            y: height,
-            dy: 30,
-            dx: 0
-          },
-          {
-            note: {
-              label: "S&P 500 Peak",
-              title: "2022-01-04",
-              align: "middle",
-                
-            },
-            connector: {
-                end: "arrow",
-            },
-            x: xScale(d3.timeParse("%Y-%m-%d")('2022-01-04')),
-            y: height,
-            dy: 30,
-            dx: 0
-          }
-        ];
+        const annotations = [];
+        if (from_date_str('2020-03-23') <= data[data.length - 1].date) {
+            annotations.push({
+                note: {
+                  label: "Covid",
+                  title: "2020-03-23",
+                  align: "middle",
+                    
+                },
+                connector: {
+                    end: "arrow",
+                },
+                x: xScale(d3.timeParse("%Y-%m-%d")('2020-03-23')),
+                y: height,
+                dy: 30,
+                dx: 0,
+            })
+        }
+        if (from_date_str('2022-01-04') <= data[data.length - 1].date) {
+            annotations.push({
+                note: {
+                  label: "S&P 500 Peak",
+                  title: "2022-01-04",
+                  align: "middle",
+                    
+                },
+                connector: {
+                    end: "arrow",
+                },
+                x: xScale(d3.timeParse("%Y-%m-%d")('2022-01-04')),
+                y: height,
+                dy: 30,
+                dx: 0
+            })
+        }
         
         const makeAnnotations = d3.annotation()
             .annotations(annotations);
@@ -279,7 +319,7 @@
 
     d3.csv("https://raw.githubusercontent.com/arigemini/cs416_final_project/main/SPX_FAANG.csv",
            normalize_csv_data,
-           drawLineChart);
+           drawChartScenes);
 
     </script>
 
