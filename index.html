@@ -49,11 +49,11 @@
     
     <script>
 
-    var margin = {top: 100, right: 100, bottom: 100, left: 100},
+    const margin = {top: 100, right: 100, bottom: 100, left: 100},
         width = window.innerWidth * 0.90 - margin.left - margin.right,
         height = window.innerHeight * 0.90 - margin.top - margin.bottom;
 
-    var svg = d3.select("#main_chart")
+    const svg = d3.select("#main_chart")
       .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
@@ -61,22 +61,7 @@
         .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
 
-    d3.csv("https://raw.githubusercontent.com/arigemini/cs416_final_project/main/SPX_FAANG.csv",
-
-      function(d){
-        return {
-            date : d3.timeParse("%Y-%m-%d")(d.Date),
-            spx : +d.SPX,
-            meta: +d.META,
-            amzn: +d.AMZN,
-            aapl: +d.AAPL,
-            nflx: +d.NFLX,
-            goog: +d.GOOG,
-        }
-      },
-
-      function(data) {
-
+    function drawLineChart(data) {
         const xScale = d3.scaleTime()
           .domain(d3.extent(data, function(d) { return d.date; }))
           .range([ 0, width ]);
@@ -278,9 +263,23 @@
             xAxisLine.attr("width", 0);
             tooltip.style("opacity", 0);
         }
-          
-      }
-    )
+    }
+
+    function normalize_csv_data(d) {
+        return {
+            date : d3.timeParse("%Y-%m-%d")(d.Date),
+            spx : +d.SPX,
+            meta: +d.META,
+            amzn: +d.AMZN,
+            aapl: +d.AAPL,
+            nflx: +d.NFLX,
+            goog: +d.GOOG,
+        }
+    }
+
+    d3.csv("https://raw.githubusercontent.com/arigemini/cs416_final_project/main/SPX_FAANG.csv",
+           normalize_csv_data,
+           drawLineChart);
 
     </script>
 
