@@ -45,37 +45,9 @@
     <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
 </head>
 <body>
-    <!-- <div id="annotation_example">
-        <svg width="460" height="400" id="example1"></svg>
-    </div> -->
-
-    <div id="main_chart" class="wrapper">
-    </div>
+    <div id="main_chart" class="wrapper"></div>
     
     <script>
-
-    // const annotations = [
-    //   {
-    //     note: {
-    //       label: "Here is the annotation label",
-    //       title: "Annotation title"
-    //     },
-    //     x: 100,
-    //     y: 100,
-    //     dy: 100,
-    //     dx: 100
-    //   }
-    // ]
-
-    // const makeAnnotations = d3.annotation()
-    //   .annotations(annotations)
-    // d3.select("#example1")
-    //   .append("g")
-    //   .call(makeAnnotations)
-    </script>
-
-    <script>
-
 
     var margin = {top: 100, right: 100, bottom: 100, left: 100},
         width = window.innerWidth * 0.90 - margin.left - margin.right,
@@ -219,6 +191,44 @@
             .attr("stroke-width", "1px")
             .attr("height", height);
 
+        const annotations = [
+          {
+            note: {
+              label: "Covid",
+              title: "2020-03-23",
+              align: "middle",
+                
+            },
+            connector: {
+                end: "arrow",
+            },
+            x: xScale(d3.timeParse("%Y-%m-%d")('2020-03-23')),
+            y: height,
+            dy: 30,
+            dx: 0
+          },
+          {
+            note: {
+              label: "S&P 500 Peak",
+              title: "2022-01-04",
+              align: "middle",
+                
+            },
+            connector: {
+                end: "arrow",
+            },
+            x: xScale(d3.timeParse("%Y-%m-%d")('2022-01-04')),
+            y: height,
+            dy: 30,
+            dx: 0
+          }
+        ];
+        
+        const makeAnnotations = d3.annotation()
+            .annotations(annotations);
+        svg.append("g")
+            .call(makeAnnotations);
+          
         const tooltip = d3.select("#main_chart")
             .append("div")
             .style("opacity", 0)
@@ -239,9 +249,6 @@
               (a, b) => getDistanceFromHoveredDate(a) - getDistanceFromHoveredDate(b)
             );
             const d = data[closestIndex];
-            // console.table(d);
-            // const closestXValue = d.date;
-            // const closestYValue = d.spx;
             const formatDate = d3.timeFormat("%Y-%m-%d");
             tooltip.select("#date").text(formatDate(d.date));
 
@@ -261,6 +268,7 @@
             tooltip.style("left", (mousePosition[0] + margin.left + 12) + "px")
                 .style("top", margin.top + "px")
                 .style("opacity", 1);
+            
             xAxisLine.attr("width", ".5px")
                 .attr("x", xScale(d.date));
 
