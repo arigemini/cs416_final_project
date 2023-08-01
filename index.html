@@ -106,11 +106,30 @@
             .attr("transform", "rotate(-90)")
             .text("(FAANG) Share Price");
           
+        tickers = ["spx", "meta", "amzn", "aapl", "nflx", "goog"];
+          
         var color = d3.scaleOrdinal()
-          .domain(["spx", "meta", "amzn", "aapl", "nflx", "goog"])
-          .range(["gray", "blue", "orange", "pink", "red", "green"])
+          .domain(tickers)
+          .range(["gray", "blue", "orange", "pink", "red", "green"]);
 
-        // Add the line
+        var legendItemWidth = 100;
+        var legend = svg.selectAll(".legend")
+          .data(tickers)
+          .enter()
+          .append("g")
+          .attr("transform", function(d,i) { return "translate(" + ((i * legendItemWidth) + (width - tickers.length * legendItemWidth) / 2) + "," + (-margin.top / 2) + ")"; })
+	      .attr("class","legend");
+	
+        var rects = legend.append('rect')
+        	.attr("width",50)
+        	.attr("height",5)
+        	.attr("fill", function(d) { return color(d); });
+        	
+        var text = legend.append('text')
+        	.attr("x", 15)
+        	.attr("y",12)
+        	.text(function(d) { return d; });
+          
         svg.append("path")
           .datum(data)
           .attr("fill", "none")
