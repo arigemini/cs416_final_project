@@ -438,7 +438,7 @@
     
             if(!extent){
               if (!idleTimeout) return idleTimeout = setTimeout(idled, 350); // This allows to wait a little bit
-              xScale.domain(full_xfull_dofullmain);
+              xScale.domain(full_x_domain);
             }else{
               xScale.domain([ xScale.invert(extent[0]), xScale.invert(extent[1]) ]);
               bounds.select(".brush").call(brush.move, null);
