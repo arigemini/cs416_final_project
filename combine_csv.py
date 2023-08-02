@@ -18,7 +18,7 @@ def main():
         writer = csv.DictWriter(fh, fieldnames=['Date'] + names)
         writer.writeheader()
         for date, info in sorted(values.items()):
-            if date < '2015-01-01' or date > '2023-07-01':
+            if date < '2019-01-01' or date > '2023-07-01':
                 continue
             writer.writerow(info)
 
