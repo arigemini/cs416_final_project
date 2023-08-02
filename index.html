@@ -233,11 +233,11 @@
           .attr("transform", "translate(" + width + ",0)")
           .call(d3.axisRight(y2Scale));
 
-        svg.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", width / 2)
-            .attr("y", height + margin.bottom / 2)
-            .text("Date");
+        // svg.append("text")
+        //     .attr("text-anchor", "end")
+        //     .attr("x", width / 2)
+        //     .attr("y", height + margin.bottom / 2)
+        //     .text("Date");
 
         svg.append("text")
             .attr("text-anchor", "end")
@@ -339,46 +339,43 @@
             .attr("stroke-width", "1px")
             .attr("height", height);
 
-        const annotations = [];
-        if (dateStrToDate('2020-03-23') <= data[data.length - 1].date) {
-            annotations.push({
-                note: {
-                  label: "Covid",
-                  title: "2020-03-23",
-                  align: "middle",
-                    
-                },
-                connector: {
-                    end: "arrow",
-                },
-                x: xScale(dateStrToDate('2020-03-23')),
-                y: height,
-                dy: 30,
-                dx: 0,
-            })
-        }
-        if (dateStrToDate('2022-01-04') <= data[data.length - 1].date) {
-            annotations.push({
-                note: {
-                  label: "S&P 500 Peak",
-                  title: "2022-01-04",
-                  align: "middle",
-                    
-                },
-                connector: {
-                    end: "arrow",
-                },
-                x: xScale(dateStrToDate('2022-01-04')),
-                y: height,
-                dy: 30,
-                dx: 0
-            })
-        }
+        drawAnnotations(data[0].date, data[data.length - 1].date);
         
-        const makeAnnotations = d3.annotation()
-            .annotations(annotations);
-        svg.append("g")
-            .call(makeAnnotations);
+        function drawAnnotations(d1, d2) {
+            const annotations = [];
+            [{date: "2020-03-23", label: "Covid"}, {date: "2022-01-04", label: "S&P 500 Peak"}].forEach(function(item) {
+                const dateObj = dateStrToDate(item.date);
+                if (!(d1 <= dateObj && dateObj <= d2)) {
+                    return;
+                }
+                annotations.push({
+                    note: {
+                      label: item.label,
+                      title: item.date,
+                      align: "middle",
+                        
+                    },
+                    connector: {
+                        end: "arrow",
+                    },
+                    x: xScale(dateObj),
+                    y: height,
+                    dy: 30,
+                    dx: 0,
+                })
+            });
+               
+            const makeAnnotations = d3.annotation()
+                .annotations(annotations);
+            svg.selectAll('#annotations')
+                .data([])
+                .exit()
+                .remove();
+            
+            svg.append("g")
+                .attr('id', 'annotations')
+                .call(makeAnnotations);
+        }
 
         const tooltip = d3.select("#main_chart")
             .append("div")
@@ -465,6 +462,7 @@
             const idx1 = getDateIdx(xScale.domain()[0], data);
             const idx2 = getDateIdx(xScale.domain()[1], data);
             drawBarChart(data[idx1], data[idx2]);
+            drawAnnotations(xScale.domain()[0], xScale.domain()[1]);
         }
     }
 
