@@ -8,6 +8,14 @@
           justify-content: center;
           font-family: sans-serif;
         }
+        #main_chart {
+            justify-content: center;
+            text-align: center;
+        }
+        #bar_chart {
+            justify-content: center;
+            text-align: center;
+        }
         .listening-rect {
             fill: transparent;
         }
@@ -40,21 +48,28 @@
           font-size: 1.1em;
           line-height: 1.4em;
         }
+
     </style>
+
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
 </head>
 <body>
-    <div id="main_chart" class="wrapper"></div>
+    <div id="main_chart"></div>
+    <div id="bar_chart"></div>
     
     <script>
 
-    const margin = {top: 100, right: 100, bottom: 100, left: 100},
-        width = window.innerWidth * 0.90 - margin.left - margin.right,
-        height = window.innerHeight * 0.90 - margin.top - margin.bottom;
+    const tickers = ["S&P 500", "META", "AMZN", "AAPL", "NFLX", "GOOG"];
+    const tickerKeys = ["spx", "meta", "amzn", "aapl", "nflx", "goog"];
+          
+    const color = d3.scaleOrdinal()
+      .domain(tickers)
+      .range(["gray", "blue", "orange", "pink", "red", "green"]);
 
-    function get_date_idx(date, data) {
-        date = from_date_str(date);
+    
+    function getDateIdx(date, data) {
         getDistanceFromDate = (d) =>
             Math.abs(d.date - date);
         return d3.scan(
@@ -63,26 +78,119 @@
         );
     };
 
-    function from_date_str(date_str) {
+    function dateStrToDate(date_str) {
         return d3.timeParse("%Y-%m-%d")(date_str);
+    }
+
+    function dateToDateStr(date) {
+        return d3.timeFormat('%Y-%m-%d')(date);
+    }
+        
+
+    function drawBarChart(d1, d2) {
+        const changes = {};
+        tickerKeys.forEach(function(t) {
+            changes[t] = (d2[t] - d1[t]) / d1[t] * 100;
+        })
+        
+        const margin = {top: 40, right: 100, bottom: 10, left: 100},
+            width = window.innerWidth * 0.50 - margin.left - margin.right,
+            height = window.innerHeight * 0.40 - margin.top - margin.bottom;
+        
+        d3.select("#bar_chart")
+            .selectAll('svg')
+            .data([0])
+            .enter()
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr('id', 'bar_area')
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        const svg = d3.select("#bar_area");
+
+        const xScale = d3.scaleBand()
+          .domain(tickers)  
+          .range([ 0, width ]);
+        const xAxis = svg.append("g")
+          .attr("transform", "translate(0," + (height / 2) + ")")
+          .call(d3.axisBottom(xScale).tickValues([]));
+
+        var yScale = d3.scaleLinear()
+          .domain([-500, 500])
+          .range([ height, 0 ]);
+        // svg.append("g")
+        //   .call(d3.axisLeft(yScale).tickValues([0]));
+        
+        svg.selectAll("rect")
+            .data(tickerKeys)
+            .enter()
+            .append("rect")
+            .attr('x', function(d, i) { return (i + 0.05) * xScale.bandwidth(); })
+            .attr('y', yScale(0))
+            .attr('width', xScale.bandwidth() * 0.90)
+            .attr('height', 0)
+            .attr('fill', color);
+
+        svg.selectAll("rect")
+            .data(tickerKeys)
+            .transition()
+            .duration(500)
+            .attr('y', function(d, i) { return changes[d] >= 0 ? yScale(changes[d]) : yScale(0); })
+            .attr('height', function(d, i) { return Math.abs(yScale(0) - yScale(changes[d])); })
+            .on("end", labelCallback);
+
+        svg.selectAll('text')
+            .data([])
+            .exit()
+            .remove();
+        
+        svg.append("text")
+            .attr("class", "title")
+            .attr("x", width / 2)
+            .attr("y", -margin.top / 2)
+            .attr("text-anchor", "middle")
+            .text(`% change from ${dateToDateStr(d1.date)} to ${dateToDateStr(d2.date)}`)
+            .style("font-size", "15px")
+            .style("text-decoration", "underline");
+        
+        function labelCallback() {
+            tickerKeys.forEach(function(d, i) {
+                svg.append("text")
+                    .attr("x", (i + 0.5) * xScale.bandwidth())
+                    .attr("y", yScale(changes[d]) + (changes[d] >= 0 ? -5 : 10))
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "8px")
+                    .text(`${changes[d].toFixed(2)} %`);
+            });
+        }
     }
         
     function drawChartScenes(data) {
-        timeout_ms = 1500;
+        timeout_ms = 2000;
+
+        const idx1 = getDateIdx(dateStrToDate('2020-02-18'), data);
+        const idx2 = getDateIdx(dateStrToDate('2020-03-23'), data);
+        const idx3 = getDateIdx(dateStrToDate('2022-01-04'), data);
         
-        drawLineChart(data.slice(0, get_date_idx('2020-02-18', data) + 1));
+        drawLineChart(data.slice(0, idx1 + 1));
+        drawBarChart(data[0], data[idx1]);
         
         setTimeout(function() {
             d3.select("#main_chart").node().innerHTML = "";
-            drawLineChart(data.slice(0, get_date_idx('2020-03-23', data) + 1));
+            drawLineChart(data.slice(0, idx2 + 1));
+            drawBarChart(data[idx1], data[idx2]);
             
             setTimeout(function() {
                 d3.select("#main_chart").node().innerHTML = "";
-                drawLineChart(data.slice(0, get_date_idx('2022-01-04', data) + 1));
+                drawLineChart(data.slice(0, idx3 + 1));
+                drawBarChart(data[idx2], data[idx3]);
             
                 setTimeout(function() {
                     d3.select("#main_chart").node().innerHTML = "";
                     drawLineChart(data);
+                    drawBarChart(data[0], data[data.length - 1]);
                 }, timeout_ms)
                 
             }, timeout_ms);
@@ -91,6 +199,10 @@
     }
         
     function drawLineChart(data) {
+        const margin = {top: 100, right: 100, bottom: 100, left: 100},
+            width = window.innerWidth * 0.90 - margin.left - margin.right,
+            height = window.innerHeight * 0.50 - margin.top - margin.bottom;
+    
         const svg = d3.select("#main_chart")
           .append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -99,7 +211,7 @@
             .attr("transform",
                   "translate(" + margin.left + "," + margin.top + ")");
 
-        const full_x_domain = [d3.timeParse("%Y-%m-%d")('2015-01-01'), d3.timeParse("%Y-%m-%d")('2023-07-01')]; 
+        const full_x_domain = [dateStrToDate('2019-01-01'), dateStrToDate('2023-07-01')]; 
         
         const xScale = d3.scaleTime()
           .domain(full_x_domain)  
@@ -141,12 +253,6 @@
             .attr("transform", "rotate(-90)")
             .text("FAANG Share Price");
           
-        tickers = ["s&p 500", "meta", "amzn", "aapl", "nflx", "goog"];
-          
-        var color = d3.scaleOrdinal()
-          .domain(tickers)
-          .range(["gray", "blue", "orange", "pink", "red", "green"]);
-
         var legendItemWidth = 100;
         var legend = svg.selectAll(".legend")
           .data(tickers)
@@ -163,7 +269,7 @@
         var text = legend.append('text')
         	.attr("x", 0)
         	.attr("y",15)
-        	.text(function(d) { return d.toUpperCase(); });
+        	.text(function(d) { return d; });
 
         const clip = svg.append("defs").append("svg:clipPath")
             .attr("id", "clip")
@@ -214,7 +320,7 @@
             .attr("x", width / 2)
             .attr("y", -margin.top / 2)
             .attr("text-anchor", "middle")
-            .text("Comparison of S&P 500 and FAANG share prices")
+            .text("S&P 500 Index and FAANG share prices")
             .style("font-size", "30px")
             .style("text-decoration", "underline");
 
@@ -234,7 +340,7 @@
             .attr("height", height);
 
         const annotations = [];
-        if (from_date_str('2020-03-23') <= data[data.length - 1].date) {
+        if (dateStrToDate('2020-03-23') <= data[data.length - 1].date) {
             annotations.push({
                 note: {
                   label: "Covid",
@@ -245,13 +351,13 @@
                 connector: {
                     end: "arrow",
                 },
-                x: xScale(d3.timeParse("%Y-%m-%d")('2020-03-23')),
+                x: xScale(dateStrToDate('2020-03-23')),
                 y: height,
                 dy: 30,
                 dx: 0,
             })
         }
-        if (from_date_str('2022-01-04') <= data[data.length - 1].date) {
+        if (dateStrToDate('2022-01-04') <= data[data.length - 1].date) {
             annotations.push({
                 note: {
                   label: "S&P 500 Peak",
@@ -262,7 +368,7 @@
                 connector: {
                     end: "arrow",
                 },
-                x: xScale(d3.timeParse("%Y-%m-%d")('2022-01-04')),
+                x: xScale(dateStrToDate('2022-01-04')),
                 y: height,
                 dy: 30,
                 dx: 0
@@ -294,15 +400,14 @@
               (a, b) => getDistanceFromHoveredDate(a) - getDistanceFromHoveredDate(b)
             );
             const d = data[closestIndex];
-            const formatDate = d3.timeFormat("%Y-%m-%d");
-            tooltip.select("#date").text(formatDate(d.date));
+            tooltip.select("#date").text(dateToDateStr(d.date));
 
             function paddedHtmlPx(v) {
                 return v.toFixed(2).padStart(8, " ").replace(" ", "&nbsp;");
             }
             
             tooltip.html(
-                formatDate(d.date) + "<br/>" + 
+                dateToDateStr(d.date) + "<br/>" + 
                 `<span><span style="color: ${color("spx")}; text-align: left">SPX&nbsp;</span>: <span style="text-align: right">${paddedHtmlPx(d.spx)}</span></span> <br/>` +
                 `<span><span style="color: ${color("meta")}; text-align: left">META</span>: <span style="text-align: right">${paddedHtmlPx(d.meta)}</span></span> <br/>` +
                 `<span><span style="color: ${color("amzn")}; text-align: left">AMZN</span>: <span style="text-align: right">${paddedHtmlPx(d.amzn)}</span></span> <br/>` +
@@ -333,7 +438,7 @@
     
             if(!extent){
               if (!idleTimeout) return idleTimeout = setTimeout(idled, 350); // This allows to wait a little bit
-              xScale.domain(full_x_domain);
+              xScale.domain(full_xfull_dofullmain);
             }else{
               xScale.domain([ xScale.invert(extent[0]), xScale.invert(extent[1]) ]);
               bounds.select(".brush").call(brush.move, null);
@@ -356,12 +461,16 @@
                         .y(function(d) { return y2Scale(d[ticker]); })
                     );
             });
+
+            const idx1 = getDateIdx(xScale.domain()[0], data);
+            const idx2 = getDateIdx(xScale.domain()[1], data);
+            drawBarChart(data[idx1], data[idx2]);
         }
     }
 
     function normalize_csv_data(d) {
         return {
-            date : d3.timeParse("%Y-%m-%d")(d.Date),
+            date : dateStrToDate(d.Date),
             spx : +d.SPX,
             meta: +d.META,
             amzn: +d.AMZN,
